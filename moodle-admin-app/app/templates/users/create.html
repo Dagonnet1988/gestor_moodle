@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Usuario - Gestión Moodle{% endblock %}
+{% block page_title %}Crear Nuevo Usuario{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('users.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="mb-0"><i class="bi bi-person-plus"></i> Crear Nuevo Usuario</h4>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('users.create') }}">
+            <div class="row g-3">
+                <!-- Datos de cuenta -->
+                <div class="col-12">
+                    <h6 class="text-muted border-bottom pb-2">
+                        <i class="bi bi-key"></i> Datos de Cuenta
+                    </h6>
+                </div>
+                <div class="col-md-4">
+                    <label for="username" class="form-label">Usuario <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="username" name="username" 
+                           required placeholder="ej: jperez"
+                           value="{{ request.form.get('username', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="password" class="form-label">Contraseña <span class="text-danger">*</span></label>
+                    <input type="password" class="form-control" id="password" name="password" 
+                           required minlength="6" placeholder="Mínimo 6 caracteres">
+                </div>
+                <div class="col-md-4">
+                    <label for="idnumber" class="form-label">Nº Identificación</label>
+                    <input type="text" class="form-control" id="idnumber" name="idnumber"
+                           placeholder="Cédula o ID"
+                           value="{{ request.form.get('idnumber', '') }}">
+                </div>
+
+                <!-- Datos personales -->
+                <div class="col-12 mt-4">
+                    <h6 class="text-muted border-bottom pb-2">
+                        <i class="bi bi-person"></i> Datos Personales
+                    </h6>
+                </div>
+                <div class="col-md-4">
+                    <label for="firstname" class="form-label">Nombre <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="firstname" name="firstname" 
+                           required placeholder="Nombre(s)"
+                           value="{{ request.form.get('firstname', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="lastname" class="form-label">Apellidos <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="lastname" name="lastname" 
+                           required placeholder="Apellido(s)"
+                           value="{{ request.form.get('lastname', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control" id="email" name="email" 
+                           required placeholder="correo@ejemplo.com"
+                           value="{{ request.form.get('email', '') }}">
+                </div>
+
+                <!-- Datos institucionales -->
+                <div class="col-12 mt-4">
+                    <h6 class="text-muted border-bottom pb-2">
+                        <i class="bi bi-building"></i> Datos Institucionales
+                    </h6>
+                </div>
+                <div class="col-md-4">
+                    <label for="institution" class="form-label">Institución</label>
+                    <input type="text" class="form-control" id="institution" name="institution"
+                           placeholder="Nombre de la institución"
+                           value="{{ request.form.get('institution', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="department" class="form-label">Departamento/Área</label>
+                    <input type="text" class="form-control" id="department" name="department"
+                           placeholder="Departamento o área"
+                           value="{{ request.form.get('department', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="city" class="form-label">Ciudad</label>
+                    <input type="text" class="form-control" id="city" name="city"
+                           placeholder="Ciudad"
+                           value="{{ request.form.get('city', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="country" class="form-label">País</label>
+                    <select class="form-select" id="country" name="country">
+                        <option value="CO" selected>Colombia</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="phone1" class="form-label">Teléfono</label>
+                    <input type="text" class="form-control" id="phone1" name="phone1"
+                           placeholder="Teléfono principal"
+                           value="{{ request.form.get('phone1', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="phone2" class="form-label">Teléfono 2</label>
+                    <input type="text" class="form-control" id="phone2" name="phone2"
+                           placeholder="Teléfono alternativo"
+                           value="{{ request.form.get('phone2', '') }}">
+                </div>
+            </div>
+            
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Crear Usuario
+                </button>
+                <a href="{{ url_for('users.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Cursos - Gestión Moodle{% endblock %}
+{% block page_title %}Gestión de Cursos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-book"></i> Cursos</h4>
+</div>
+
+<!-- Filtros -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-8">
+                <label class="form-label small text-muted">Buscar curso</label>
+                <input type="text" name="search" class="form-control" 
+                       placeholder="Nombre o nombre corto del curso..."
+                       value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Por página</label>
+                <select name="per_page" class="form-select">
+                    {% for n in [10, 25, 50, 100] %}
+                    <option value="{{ n }}" {% if per_page == n %}selected{% endif %}>{{ n }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de cursos -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white">
+        <span class="text-muted small">{{ total }} cursos encontrados</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre del Curso</th>
+                        <th>Nombre Corto</th>
+                        <th>Categoría</th>
+                        <th>Inscritos</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                    <tr>
+                        <td class="text-muted">{{ course.id }}</td>
+                        <td><strong>{{ course.fullname }}</strong></td>
+                        <td class="text-muted">{{ course.shortname }}</td>
+                        <td class="text-muted">{{ course.category_name or '-' }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ course.enrolled_count }}</span>
+                        </td>
+                        <td>
+                            {% if course.visible %}
+                            <span class="badge bg-success">Visible</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Oculto</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('courses.detail', course_id=course.id) }}" 
+                                   class="btn btn-outline-info" title="Ver detalle">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('enrolments.enrol', course_id=course.id) }}" 
+                                   class="btn btn-outline-primary" title="Inscribir usuarios">
+                                    <i class="bi bi-person-plus"></i>
+                                </a>
+                                <a href="{{ url_for('grades.by_course', course_id=course.id) }}" 
+                                   class="btn btn-outline-success" title="Ver calificaciones">
+                                    <i class="bi bi-clipboard-data"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                            <p class="mt-2">No se encontraron cursos</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    {% if total_pages > 1 %}
+    <div class="card-footer bg-white">
+        <nav>
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page-1 }}&search={{ search }}&per_page={{ per_page }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == page or (p >= page - 2 and p <= page + 2) or p == 1 or p == total_pages %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="?page={{ p }}&search={{ search }}&per_page={{ per_page }}">{{ p }}</a>
+                    </li>
+                    {% elif p == page - 3 or p == page + 3 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page+1 }}&search={{ search }}&per_page={{ per_page }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

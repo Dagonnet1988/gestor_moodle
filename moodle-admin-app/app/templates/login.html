@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Iniciar Sesión - Gestión Moodle{% endblock %}
+
+{% block content_no_sidebar %}
+<div class="row justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow-lg border-0" style="border-radius: 16px;">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <div class="mb-3">
+                        <i class="bi bi-mortarboard-fill" style="font-size: 3rem; color: #f98012;"></i>
+                    </div>
+                    <h4 class="fw-bold">Gestión Moodle</h4>
+                    <p class="text-muted small">Ingrese sus credenciales de Moodle</p>
+                </div>
+                
+                <form method="POST" action="{{ url_for('auth.login') }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            <i class="bi bi-person"></i> Usuario
+                        </label>
+                        <input type="text" class="form-control form-control-lg" id="username" 
+                               name="username" value="{{ username|default('') }}" 
+                               placeholder="Ingrese su usuario de Moodle" required autofocus>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label">
+                            <i class="bi bi-lock"></i> Contraseña
+                        </label>
+                        <div class="input-group">
+                            <input type="password" class="form-control form-control-lg" id="password" 
+                                   name="password" placeholder="Ingrese su contraseña" required>
+                            <button class="btn btn-outline-secondary" type="button" 
+                                    onclick="togglePassword()">
+                                <i class="bi bi-eye" id="toggleIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-lg w-100 text-white" 
+                            style="background-color: #f98012; border: none;">
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                    </button>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        Solo personal administrativo y docente
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePassword() {
+    const input = document.getElementById('password');
+    const icon = document.getElementById('toggleIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('bi-eye', 'bi-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('bi-eye-slash', 'bi-eye');
+    }
+}
+</script>
+{% endblock %}

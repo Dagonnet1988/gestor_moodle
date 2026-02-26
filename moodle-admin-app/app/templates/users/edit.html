@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Usuario - Gestión Moodle{% endblock %}
+{% block page_title %}Editar Usuario: {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('users.detail', user_id=user.id) }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="mb-0"><i class="bi bi-pencil"></i> Editar Usuario: {{ user.username }}</h4>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('users.edit', user_id=user.id) }}">
+            <div class="row g-3">
+                <!-- Datos personales -->
+                <div class="col-12">
+                    <h6 class="text-muted border-bottom pb-2">
+                        <i class="bi bi-person"></i> Datos Personales
+                    </h6>
+                </div>
+                <div class="col-md-4">
+                    <label for="firstname" class="form-label">Nombre <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="firstname" name="firstname" 
+                           required value="{{ user.firstname }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="lastname" class="form-label">Apellidos <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="lastname" name="lastname" 
+                           required value="{{ user.lastname }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control" id="email" name="email" 
+                           required value="{{ user.email }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="idnumber" class="form-label">Nº Identificación</label>
+                    <input type="text" class="form-control" id="idnumber" name="idnumber"
+                           value="{{ user.idnumber or '' }}">
+                </div>
+
+                <!-- Datos institucionales -->
+                <div class="col-12 mt-4">
+                    <h6 class="text-muted border-bottom pb-2">
+                        <i class="bi bi-building"></i> Datos Institucionales
+                    </h6>
+                </div>
+                <div class="col-md-4">
+                    <label for="institution" class="form-label">Institución</label>
+                    <input type="text" class="form-control" id="institution" name="institution"
+                           value="{{ user.institution or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="department" class="form-label">Departamento/Área</label>
+                    <input type="text" class="form-control" id="department" name="department"
+                           value="{{ user.department or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="city" class="form-label">Ciudad</label>
+                    <input type="text" class="form-control" id="city" name="city"
+                           value="{{ user.city or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="country" class="form-label">País</label>
+                    <select class="form-select" id="country" name="country">
+                        <option value="CO" {% if user.country == 'CO' %}selected{% endif %}>Colombia</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="phone1" class="form-label">Teléfono</label>
+                    <input type="text" class="form-control" id="phone1" name="phone1"
+                           value="{{ user.phone1 or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label for="phone2" class="form-label">Teléfono 2</label>
+                    <input type="text" class="form-control" id="phone2" name="phone2"
+                           value="{{ user.phone2 or '' }}">
+                </div>
+            </div>
+            
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Guardar Cambios
+                </button>
+                <a href="{{ url_for('users.detail', user_id=user.id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i> Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

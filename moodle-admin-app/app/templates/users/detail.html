@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.firstname }} {{ user.lastname }} - Gestión Moodle{% endblock %}
+{% block page_title %}Detalle de Usuario{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('users.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="mb-0"><i class="bi bi-person"></i> {{ user.firstname }} {{ user.lastname }}</h4>
+    <span class="badge {% if user.suspended %}bg-danger{% else %}bg-success{% endif %} ms-2">
+        {{ 'Suspendido' if user.suspended else 'Activo' }}
+    </span>
+</div>
+
+<div class="row g-4">
+    <!-- Información del usuario -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Información</h6>
+                <div class="btn-group btn-group-sm">
+                    <a href="{{ url_for('users.edit', user_id=user.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <form method="POST" action="{{ url_for('users.toggle_status', user_id=user.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-outline-{{ 'success' if user.suspended else 'warning' }}"
+                                onclick="return confirm('¿Cambiar estado del usuario?')">
+                            <i class="bi bi-{{ 'check-circle' if user.suspended else 'pause-circle' }}"></i>
+                            {{ 'Habilitar' if user.suspended else 'Suspender' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless table-sm mb-0">
+                    <tr>
+                        <td class="text-muted" style="width: 35%">ID</td>
+                        <td>{{ user.id }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Usuario</td>
+                        <td><strong>{{ user.username }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Nombre</td>
+                        <td>{{ user.firstname }} {{ user.lastname }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Email</td>
+                        <td><a href="mailto:{{ user.email }}">{{ user.email }}</a></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Identificación</td>
+                        <td>{{ user.idnumber or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Institución</td>
+                        <td>{{ user.institution or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Departamento</td>
+                        <td>{{ user.department or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Ciudad</td>
+                        <td>{{ user.city or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Teléfono</td>
+                        <td>{{ user.phone1 or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Autenticación</td>
+                        <td>{{ user.auth }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Último acceso</td>
+                        <td>
+                            {% if user.lastaccess %}
+                                {{ user.lastaccess | int | strftime }}
+                            {% else %}
+                                Nunca
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Resetear contraseña -->
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-key"></i> Resetear Contraseña</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('users.reset_password', user_id=user.id) }}"
+                      onsubmit="return confirm('¿Está seguro de resetear la contraseña?')">
+                    <div class="input-group">
+                        <input type="password" class="form-control" name="new_password" 
+                               placeholder="Nueva contraseña (mín 6 caracteres)" required minlength="6">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-arrow-clockwise"></i> Resetear
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cursos inscritos -->
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-book"></i> Cursos Inscritos ({{ courses|length }})</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if courses %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Curso</th>
+                                <th>Rol</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for course in courses %}
+                            <tr>
+                                <td>
+                                    <strong>{{ course.fullname }}</strong>
+                                    <br><small class="text-muted">{{ course.shortname }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ course.role_name or 'Sin rol' }}</span>
+                                </td>
+                                <td>
+                                    {% if course.status == 0 %}
+                                    <span class="badge bg-success">Activo</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inactivo</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-book" style="font-size: 2rem;"></i>
+                    <p class="mt-2">No está inscrito en ningún curso</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

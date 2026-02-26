@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.fullname }} - Gestión Moodle{% endblock %}
+{% block page_title %}Detalle del Curso{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('courses.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="mb-0"><i class="bi bi-book"></i> {{ course.fullname }}</h4>
+</div>
+
+<div class="row g-4">
+    <!-- Info del curso -->
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Información</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless table-sm mb-0">
+                    <tr><td class="text-muted">ID</td><td>{{ course.id }}</td></tr>
+                    <tr><td class="text-muted">Nombre corto</td><td>{{ course.shortname }}</td></tr>
+                    <tr><td class="text-muted">Categoría</td><td>{{ course.category_name or '-' }}</td></tr>
+                    <tr><td class="text-muted">Visible</td><td>{{ 'Sí' if course.visible else 'No' }}</td></tr>
+                    <tr><td class="text-muted">Participantes</td><td><strong>{{ participants|length }}</strong></td></tr>
+                </table>
+            </div>
+            <div class="card-footer bg-white">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('enrolments.enrol', course_id=course.id) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-person-plus"></i> Inscribir Usuarios
+                    </a>
+                    <a href="{{ url_for('grades.by_course', course_id=course.id) }}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-clipboard-data"></i> Ver Calificaciones
+                    </a>
+                    <a href="{{ url_for('emails.send', course_id=course.id, template='reminder') }}" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-envelope"></i> Enviar Correo Masivo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Participantes -->
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-people"></i> Participantes ({{ participants|length }})</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if participants %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="participantsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Rol</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in participants %}
+                            <tr>
+                                <td>{{ p.username }}</td>
+                                <td>{{ p.firstname }} {{ p.lastname }}</td>
+                                <td class="text-muted small">{{ p.email }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ p.role_name or 'Sin rol' }}</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('emails.resend', user_id=p.id, course_id=course.id, template='welcome') }}" 
+                                           class="btn btn-outline-success" title="Reenviar bienvenida"
+                                           onclick="return confirm('¿Reenviar correo de bienvenida?')">
+                                            <i class="bi bi-envelope-check"></i>
+                                        </a>
+                                        <a href="{{ url_for('emails.resend', user_id=p.id, course_id=course.id, template='reminder') }}" 
+                                           class="btn btn-outline-warning" title="Enviar recordatorio"
+                                           onclick="return confirm('¿Enviar recordatorio?')">
+                                            <i class="bi bi-bell"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('enrolments.unenrol') }}" class="d-inline"
+                                              onsubmit="return confirm('¿Desinscribir a {{ p.firstname }} {{ p.lastname }}?')">
+                                            <input type="hidden" name="user_id" value="{{ p.id }}">
+                                            <input type="hidden" name="course_id" value="{{ course.id }}">
+                                            <button type="submit" class="btn btn-outline-danger" title="Desinscribir">
+                                                <i class="bi bi-person-x"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-people" style="font-size: 2rem;"></i>
+                    <p class="mt-2">No hay participantes en este curso</p>
+                    <a href="{{ url_for('enrolments.enrol', course_id=course.id) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-person-plus"></i> Inscribir Usuarios
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    if ($('#participantsTable tbody tr').length > 10) {
+        $('#participantsTable').DataTable({
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'
+            },
+            pageLength: 25
+        });
+    }
+});
+</script>
+{% endblock %}
