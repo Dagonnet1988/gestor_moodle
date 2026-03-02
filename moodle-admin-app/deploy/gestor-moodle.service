@@ -5,9 +5,9 @@ After=network.target
 [Service]
 User=gestormoodle
 Group=gestormoodle
-WorkingDirectory=/opt/gestor-moodle
-EnvironmentFile=/opt/gestor-moodle/.env
-ExecStart=/opt/gestor-moodle/venv/bin/gunicorn \
+WorkingDirectory=/opt/gestor-moodle/moodle-admin-app
+EnvironmentFile=/opt/gestor-moodle/moodle-admin-app/.env
+ExecStart=/opt/gestor-moodle/moodle-admin-app/venv/bin/gunicorn \
     --workers 3 \
     --bind 127.0.0.1:5000 \
     --timeout 120 \

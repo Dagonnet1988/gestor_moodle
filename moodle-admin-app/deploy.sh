@@ -7,7 +7,8 @@
 set -e
 
 APP_NAME="gestor-moodle"
-APP_DIR="/opt/${APP_NAME}"
+REPO_DIR="/opt/${APP_NAME}"
+APP_DIR="${REPO_DIR}/moodle-admin-app"
 APP_USER="gestormoodle"
 REPO_URL="https://github.com/Dagonnet1988/gestor_moodle.git"
 BRANCH="main"
@@ -30,15 +31,15 @@ else
 fi
 
 # 3. Clonar o actualizar repositorio
-if [ -d "${APP_DIR}" ]; then
+if [ -d "${REPO_DIR}" ]; then
     echo "[3/7] Actualizando repositorio..."
-    cd "${APP_DIR}"
+    cd "${REPO_DIR}"
     git fetch origin
     git reset --hard "origin/${BRANCH}"
 else
     echo "[3/7] Clonando repositorio..."
-    git clone -b "${BRANCH}" "${REPO_URL}" "${APP_DIR}"
-    cd "${APP_DIR}"
+    git clone -b "${BRANCH}" "${REPO_URL}" "${REPO_DIR}"
+    cd "${REPO_DIR}"
 fi
 
 # 4. Crear entorno virtual e instalar dependencias
@@ -60,7 +61,7 @@ fi
 # 6. Ajustar permisos
 echo "[6/7] Ajustando permisos..."
 mkdir -p /var/log/gestor-moodle
-chown -R "${APP_USER}:${APP_USER}" "${APP_DIR}"
+chown -R "${APP_USER}:${APP_USER}" "${REPO_DIR}"
 chown -R "${APP_USER}:${APP_USER}" /var/log/gestor-moodle
 chmod 600 "${APP_DIR}/.env"
 
