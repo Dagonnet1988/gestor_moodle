@@ -86,7 +86,7 @@
                                         <span class="badge" style="background-color:#20c997">activo</span>
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td data-order="{{ (p.grade_pct or -1) | float }}">
                                     {% if p.grade is not none and p.grademax %}
                                         {% set pct = ((p.grade / p.grademax)*100)|round(2) %}
                                         {% if pct >= 100 %}

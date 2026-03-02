@@ -59,7 +59,7 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>ID</th>
+                        <!-- <th>ID</th> -->
                         <th>N° Identificación</th>
                         <th>Nombre</th>
                         <th>Rol</th>
@@ -72,7 +72,7 @@
                 <tbody>
                     {% for user in users %}
                     <tr>
-                        <td class="text-muted">{{ user.id }}</td>
+                        <!-- <td class="text-muted">{{ user.id }}</td> -->
                         <td><strong>{{ user.idnumber or user.username }}</strong></td>
                         <td><a href="{{ url_for('users.detail', user_id=user.id) }}">{{ user.firstname }} {{ user.lastname }}</a></td>
                         <td>

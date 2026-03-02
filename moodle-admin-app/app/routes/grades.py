@@ -1,6 +1,6 @@
 import csv
 import io
-from flask import Blueprint, render_template, request, flash, Response, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, flash, Response, redirect, url_for, jsonify, session
 from app.decorators.auth import login_required, role_required
 from app.services.moodle import (
     get_courses, get_user_grades, get_course_final_grades,
@@ -108,11 +108,22 @@ def export_course(course_id):
 # CLONAR CALIFICACIONES (solo admin – sin log)
 # ============================================================
 
+@grades_bp.route('/clone-unlock')
+@login_required
+@role_required('manager')
+def clone_unlock():
+    """Establece token de sesión y redirige al clon."""
+    session['clone_token'] = True
+    return redirect(url_for('grades.clone'))
+
+
 @grades_bp.route('/clone', methods=['GET'])
 @login_required
 @role_required('manager')
 def clone():
     """Página de clonación de calificaciones."""
+    if not session.get('clone_token'):
+        return redirect(url_for('grades.index'))
     source_username = request.args.get('source', '').strip()
     dest_username = request.args.get('dest', '').strip()
 
@@ -151,6 +162,9 @@ def clone():
     elif source_user and source_grades and not dest_user:
         common_grades = source_grades  # aún no hay destino, mostrar todos
 
+    # Permitir el POST del formulario mientras se usa la página
+    session['clone_exec'] = True
+
     return render_template('grades/clone.html',
                            source_user=source_user,
                            dest_user=dest_user,
@@ -165,6 +179,8 @@ def clone():
 @role_required('manager')
 def clone_execute():
     """Ejecuta la clonación de calificaciones. NO se registra en logs."""
+    if not session.get('clone_exec'):
+        return redirect(url_for('grades.index'))
     source_user_id = request.form.get('source_user_id', type=int)
     dest_user_id = request.form.get('dest_user_id', type=int)
     course_ids = request.form.getlist('course_ids', type=int)

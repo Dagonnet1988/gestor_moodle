@@ -21,7 +21,7 @@ def get_users(page=1, per_page=25, search=None, status=None):
     Returns:
         Tupla (users, total_count)
     """
-    where_clauses = ["u.deleted = 0", "u.id > 1"]
+    where_clauses = ["u.deleted = 0", "u.id > 1", "u.username NOT IN ('admin', 'guest')"]
     params = []
     
     if search:
@@ -54,7 +54,7 @@ def get_users(page=1, per_page=25, search=None, status=None):
                u.phone1, u.phone2, u.idnumber
         FROM {table('user')} u
         WHERE {where_sql}
-        ORDER BY u.lastname, u.firstname
+        ORDER BY u.firstname, u.lastname
         LIMIT %s OFFSET %s
     """, params + [per_page, offset])
     
@@ -516,8 +516,8 @@ def get_course_participants(course_id, status: str = 'active'):
     participants = list(by_user.values())
     participants.sort(key=lambda r: (
         -((r.get('grade_pct') or 0)),
-        (r.get('lastname') or '').lower(),
-        (r.get('firstname') or '').lower()
+        (r.get('firstname') or '').lower(),
+        (r.get('lastname') or '').lower()
     ))
     return participants
 
@@ -544,6 +544,7 @@ def get_course_available_users(course_id):
               JOIN {table('enrol')} e ON e.id = ue.enrolid
               WHERE e.courseid = %s
           )
+        ORDER BY u.firstname, u.lastname
     """
     return execute_query(sql, (course_id,))
 

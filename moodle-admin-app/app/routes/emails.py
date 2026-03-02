@@ -67,6 +67,8 @@ def send():
                 participants = get_course_participants(course_id)
                 if template_name == 'welcome':
                     participants = [p for p in participants if not p.get('grade')]
+                elif template_name == 'reminder':
+                    participants = [p for p in participants if p.get('grade_pct') is None or p.get('grade_pct') < 100]
                 for p in participants:
                     recipients.append(p)
             elif user_ids:
@@ -174,6 +176,8 @@ def send():
             # apply welcome template filter: omit users with any grade
             if template == 'welcome':
                 participants = [p for p in participants if not p.get('grade')]
+            elif template == 'reminder':
+                participants = [p for p in participants if p.get('grade_pct') is None or p.get('grade_pct') < 100]
             # sort alphabetically by firstname+lastname for dropdown
             participants.sort(key=lambda p: ((p.get('firstname') or '').lower(), (p.get('lastname') or '').lower()))
         if user_id:

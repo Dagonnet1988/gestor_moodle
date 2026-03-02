@@ -74,6 +74,18 @@ def index():
                 log['details_parsed'] = None
         else:
             log['details_parsed'] = None
+        
+        # Enriquecer con información del usuario si hay user_id
+        if log.get('details_parsed') and 'user_id' in log['details_parsed']:
+            from app.services.moodle import get_user_by_id
+            user_id = log['details_parsed']['user_id']
+            try:
+                user = get_user_by_id(user_id)
+                if user:
+                    log['details_parsed']['username'] = user['username']
+                    log['details_parsed']['name'] = f"{user['firstname']} {user['lastname']}"
+            except Exception:
+                pass  # Si falla, continuar sin enriquecer
 
     return render_template('logs/index.html',
         logs=logs, total=total, page=page, per_page=per_page,
