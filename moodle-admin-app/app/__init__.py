@@ -1,5 +1,6 @@
 from datetime import datetime
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 from app.config import Config
 
 
@@ -7,6 +8,9 @@ def create_app():
     """Factory de la aplicación Flask."""
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # Soporte para proxy inverso con prefijo (ej: /moodle)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_prefix=1)
     
     # Filtro de Jinja2 para formatear timestamps Unix
     @app.template_filter('strftime')
