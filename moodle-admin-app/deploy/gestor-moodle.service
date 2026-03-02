@@ -1,0 +1,21 @@
+[Unit]
+Description=Gestor Moodle (gunicorn)
+After=network.target
+
+[Service]
+User=gestormoodle
+Group=gestormoodle
+WorkingDirectory=/opt/gestor-moodle
+EnvironmentFile=/opt/gestor-moodle/.env
+ExecStart=/opt/gestor-moodle/venv/bin/gunicorn \
+    --workers 3 \
+    --bind 127.0.0.1:5000 \
+    --timeout 120 \
+    --access-logfile /var/log/gestor-moodle/access.log \
+    --error-logfile /var/log/gestor-moodle/error.log \
+    "run:app"
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
