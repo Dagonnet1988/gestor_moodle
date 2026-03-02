@@ -9,6 +9,13 @@
         <i class="bi bi-arrow-left"></i>
     </a>
     <h4 class="mb-0"><i class="bi bi-person"></i> {{ user.firstname }} {{ user.lastname }}</h4>
+    {% if user.role_names %}
+        {% for rn in user.role_names %}
+        <span class="badge bg-primary ms-2">{{ rn }}</span>
+        {% endfor %}
+    {% elif user.role_name %}
+        <span class="badge bg-primary ms-2">{{ user.role_name }}</span>
+    {% endif %}
     <span class="badge {% if user.suspended %}bg-danger{% else %}bg-success{% endif %} ms-2">
         {{ 'Suspendido' if user.suspended else 'Activo' }}
     </span>
@@ -40,8 +47,8 @@
                         <td>{{ user.id }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Usuario</td>
-                        <td><strong>{{ user.username }}</strong></td>
+                        <td class="text-muted">Nº Identificación</td>
+                        <td><strong>{{ user.idnumber or user.username }}</strong></td>
                     </tr>
                     <tr>
                         <td class="text-muted">Nombre</td>
@@ -49,19 +56,7 @@
                     </tr>
                     <tr>
                         <td class="text-muted">Email</td>
-                        <td><a href="mailto:{{ user.email }}">{{ user.email }}</a></td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Identificación</td>
-                        <td>{{ user.idnumber or '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Institución</td>
-                        <td>{{ user.institution or '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Departamento</td>
-                        <td>{{ user.department or '-' }}</td>
+                        <td>{{ user.email }}</td>
                     </tr>
                     <tr>
                         <td class="text-muted">Ciudad</td>
@@ -123,25 +118,69 @@
                             <tr>
                                 <th>Curso</th>
                                 <th>Rol</th>
+                                <th>Calificación</th>
                                 <th>Estado</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for course in courses %}
                             <tr>
                                 <td>
-                                    <strong>{{ course.fullname }}</strong>
-                                    <br><small class="text-muted">{{ course.shortname }}</small>
+                                    <a href="{{ url_for('courses.detail', course_id=course.id) }}">
+                                        <strong>{{ course.fullname }}</strong>
+                                    </a>
+                                    <br><small class="text-muted">{{ course.category_name or '-' }}</small>
                                 </td>
                                 <td>
                                     <span class="badge bg-info">{{ course.role_name or 'Sin rol' }}</span>
                                 </td>
                                 <td>
+                                    {% if course.grade_pct is not none %}
+                                        {% if course.grade_pct >= 100 %}
+                                            <span class="badge bg-success">{{ course.grade_pct }}%</span>
+                                        {% elif course.grade_pct >= 60 %}
+                                            <span class="badge bg-warning text-dark">{{ course.grade_pct }}%</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">{{ course.grade_pct }}%</span>
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
                                     {% if course.status == 0 %}
-                                    <span class="badge bg-success">Activo</span>
+                                    <span class="badge" style="background-color:#20c997">Activo</span>
                                     {% else %}
                                     <span class="badge bg-secondary">Inactivo</span>
                                     {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        {% if course.grade_pct is none and not user.suspended %}
+                                            <a href="{{ url_for('emails.resend', user_id=user.id, course_id=course.id, template='reminder') }}"
+                                               class="btn btn-outline-warning" title="Enviar recordatorio" onclick="return confirm('¿Enviar correo de recordatorio?')">
+                                                <i class="bi bi-bell"></i>
+                                            </a>
+                                            <form method="POST" action="{{ url_for('enrolments.unenrol') }}" class="d-inline"
+                                                  onsubmit="return confirm('¿Desinscribir a {{ user.firstname }} {{ user.lastname }}?')">
+                                                <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                <input type="hidden" name="course_id" value="{{ course.id }}">
+                                                <button type="submit" class="btn btn-outline-danger" title="Desinscribir">
+                                                    <i class="bi bi-person-x"></i>
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            {% if course.has_exhausted_attempts and course.grade_pct is not none and course.grade_pct < 100 %}
+                                                <form method="POST" action="{{ url_for('courses.allow_retry', course_id=course.id) }}" class="d-inline">
+                                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                                    <button type="submit" class="btn btn-outline-primary" title="Permitir nuevo intento">
+                                                        <i class="bi bi-arrow-repeat"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}

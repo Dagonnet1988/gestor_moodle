@@ -22,22 +22,12 @@
                     </h6>
                 </div>
                 <div class="col-md-4">
-                    <label for="username" class="form-label">Usuario <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="username" name="username" 
-                           required placeholder="ej: jperez"
+                    <label for="username" class="form-label">N° Documento (usuario) <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="username" name="username"
+                           required placeholder="Documento"
                            value="{{ request.form.get('username', '') }}">
                 </div>
-                <div class="col-md-4">
-                    <label for="password" class="form-label">Contraseña <span class="text-danger">*</span></label>
-                    <input type="password" class="form-control" id="password" name="password" 
-                           required minlength="6" placeholder="Mínimo 6 caracteres">
-                </div>
-                <div class="col-md-4">
-                    <label for="idnumber" class="form-label">Nº Identificación</label>
-                    <input type="text" class="form-control" id="idnumber" name="idnumber"
-                           placeholder="Cédula o ID"
-                           value="{{ request.form.get('idnumber', '') }}">
-                </div>
+                <!-- contraseña omitida, se asigna automáticamente a partir del documento -->
 
                 <!-- Datos personales -->
                 <div class="col-12 mt-4">
@@ -64,29 +54,11 @@
                            value="{{ request.form.get('email', '') }}">
                 </div>
 
-                <!-- Datos institucionales -->
+                <!-- Datos institucionales simplificados -->
                 <div class="col-12 mt-4">
                     <h6 class="text-muted border-bottom pb-2">
-                        <i class="bi bi-building"></i> Datos Institucionales
+                        <i class="bi bi-building"></i> Ubicación
                     </h6>
-                </div>
-                <div class="col-md-4">
-                    <label for="institution" class="form-label">Institución</label>
-                    <input type="text" class="form-control" id="institution" name="institution"
-                           placeholder="Nombre de la institución"
-                           value="{{ request.form.get('institution', '') }}">
-                </div>
-                <div class="col-md-4">
-                    <label for="department" class="form-label">Departamento/Área</label>
-                    <input type="text" class="form-control" id="department" name="department"
-                           placeholder="Departamento o área"
-                           value="{{ request.form.get('department', '') }}">
-                </div>
-                <div class="col-md-4">
-                    <label for="city" class="form-label">Ciudad</label>
-                    <input type="text" class="form-control" id="city" name="city"
-                           placeholder="Ciudad"
-                           value="{{ request.form.get('city', '') }}">
                 </div>
                 <div class="col-md-4">
                     <label for="country" class="form-label">País</label>
@@ -95,16 +67,16 @@
                     </select>
                 </div>
                 <div class="col-md-4">
+                    <label for="city" class="form-label">Ciudad</label>
+                    <input type="text" class="form-control" id="city" name="city"
+                           placeholder="Ciudad"
+                           value="{{ request.form.get('city', '') }}">
+                </div>
+                <div class="col-md-4">
                     <label for="phone1" class="form-label">Teléfono</label>
                     <input type="text" class="form-control" id="phone1" name="phone1"
                            placeholder="Teléfono principal"
                            value="{{ request.form.get('phone1', '') }}">
-                </div>
-                <div class="col-md-4">
-                    <label for="phone2" class="form-label">Teléfono 2</label>
-                    <input type="text" class="form-control" id="phone2" name="phone2"
-                           placeholder="Teléfono alternativo"
-                           value="{{ request.form.get('phone2', '') }}">
                 </div>
             </div>
             

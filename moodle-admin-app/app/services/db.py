@@ -22,6 +22,12 @@ def execute_query(query, params=None, fetchone=False):
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
+            if params:
+                # escape any '%' characters in string parameters so that the
+                # underlying Python formatting (used by pymysql) does not
+                # interpret them as additional placeholders.
+                params = tuple(p.replace('%%','%%').replace('%','%%') if isinstance(p, str) else p
+                               for p in params)
             cursor.execute(query, params)
             if fetchone:
                 return cursor.fetchone()
@@ -35,6 +41,9 @@ def execute_insert(query, params=None):
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
+            if params:
+                params = tuple(p.replace('%%','%%').replace('%','%%') if isinstance(p, str) else p
+                               for p in params)
             cursor.execute(query, params)
             return cursor.lastrowid
     finally:
@@ -46,6 +55,9 @@ def execute_update(query, params=None):
     conn = get_connection()
     try:
         with conn.cursor() as cursor:
+            if params:
+                params = tuple(p.replace('%%','%%').replace('%','%%') if isinstance(p, str) else p
+                               for p in params)
             cursor.execute(query, params)
             return cursor.rowcount
     finally:

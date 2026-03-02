@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Inscripción Masiva - Gestión Moodle{% endblock %}
+{% block page_title %}Inscripción Masiva{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('enrolments.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="mb-0"><i class="bi bi-upload"></i> Inscripción Masiva desde CSV</h4>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('enrolments.bulk_enrol') }}" enctype="multipart/form-data">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="course_id" class="form-label">Curso <span class="text-danger">*</span></label>
+                    <select class="form-select" id="course_id" name="course_id" required>
+                        <option value="">Seleccionar curso...</option>
+                        {% for course in courses %}
+                        <option value="{{ course.id }}">{{ course.fullname }} ({{ course.shortname }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="csv_file" class="form-label">Archivo CSV <span class="text-danger">*</span></label>
+                    <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+                    <div class="form-text">El archivo debe tener columna <code>username</code> con nombres de usuario separados por comas o en filas.</div>
+                </div>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-upload"></i> Procesar CSV
+                </button>
+                <a href="{{ url_for('enrolments.index') }}" class="btn btn-outline-secondary">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

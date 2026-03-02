@@ -29,17 +29,24 @@ def get_user_by_username(username):
     return execute_query(query, (username,), fetchone=True)
 
 
+def get_role_label(shortname):
+    """Convierte el shortname de Moodle a una etiqueta en español."""
+    labels = {
+        'manager': 'Administrador',
+        'coursecreator': 'Creador de cursos',
+        'editingteacher': 'Docente con edición',
+        'teacher': 'Docente',
+        'student': 'Estudiante',
+        'guest': 'Invitado'
+    }
+    return labels.get(shortname, shortname)
+
+
 def get_user_roles(user_id):
     """Obtiene los roles de un usuario en Moodle.
     
-    Retorna una lista de diccionarios con los roles asignados.
-    Los roles estándar de Moodle son:
-        1 = manager
-        2 = coursecreator
-        3 = editingteacher
-        4 = teacher
-        5 = student
-        6 = guest
+    Retorna una lista de diccionarios con los roles asignados; además
+    agrega la etiqueta en español bajo la clave 'label'.
     """
     query = f"""
         SELECT DISTINCT r.id as role_id, r.shortname, r.name
@@ -47,7 +54,20 @@ def get_user_roles(user_id):
         JOIN {table('role')} r ON r.id = ra.roleid
         WHERE ra.userid = %s
     """
-    return execute_query(query, (user_id,))
+    roles = execute_query(query, (user_id,))
+    for r in roles:
+        r['label'] = get_role_label(r['shortname'])
+    return roles
+
+
+def get_user_top_roles(user_id, n=2):
+    """Devuelve los n roles de mayor jerarquía (menor role_id) para el usuario."""
+    roles = get_user_roles(user_id)
+    # excluir invitados y estudiantes si hay otros disponibles
+    non_std = [r for r in roles if r['shortname'] not in ('student','guest')]
+    sel = non_std or roles
+    sel.sort(key=lambda r: r['role_id'])
+    return sel[:n]
 
 
 def is_non_student(user_id):
@@ -98,8 +118,11 @@ def authenticate_user(username, password):
     if not is_non_student(user['id']):
         raise ValueError('Acceso denegado. Solo usuarios con rol administrativo o docente pueden acceder')
     
-    # 5. Obtener rol más alto
-    highest_role = get_user_highest_role(user['id'])
+    # 5. Obtener los dos roles más altos
+    top_roles = get_user_top_roles(user['id'], n=2)
+    primary = top_roles[0] if top_roles else None
+    role_list = [r['shortname'] for r in top_roles]
+    role_names = [r['label'] for r in top_roles]
     
     return {
         'id': user['id'],
@@ -107,6 +130,7 @@ def authenticate_user(username, password):
         'firstname': user['firstname'],
         'lastname': user['lastname'],
         'email': user['email'],
-        'role': highest_role['shortname'] if highest_role else 'unknown',
-        'role_name': highest_role['name'] if highest_role else 'Desconocido'
+        'roles': role_list,            # lista de shortnames
+        'role': primary['shortname'] if primary else 'unknown',
+        'role_name': ", ".join(role_names) if role_names else 'Desconocido'
     }

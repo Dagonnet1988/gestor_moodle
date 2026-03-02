@@ -17,7 +17,7 @@
                     <i class="bi bi-people-fill"></i>
                 </div>
                 <div>
-                    <div class="stat-value">{{ users_active }}</div>
+                    <div class="stat-value"><a href="{{ url_for('users.index') }}?status=active">{{ users_active }}</a></div>
                     <div class="stat-label">Usuarios Activos</div>
                 </div>
             </div>
@@ -30,7 +30,7 @@
                     <i class="bi bi-person-x-fill"></i>
                 </div>
                 <div>
-                    <div class="stat-value">{{ users_suspended }}</div>
+                    <div class="stat-value"><a href="{{ url_for('users.index') }}?status=suspended">{{ users_suspended }}</a></div>
                     <div class="stat-label">Suspendidos</div>
                 </div>
             </div>
@@ -43,7 +43,7 @@
                     <i class="bi bi-book-fill"></i>
                 </div>
                 <div>
-                    <div class="stat-value">{{ courses_total }}</div>
+                    <div class="stat-value"><a href="{{ url_for('courses.index') }}">{{ courses_total }}</a></div>
                     <div class="stat-label">Cursos Activos</div>
                 </div>
             </div>
@@ -56,7 +56,7 @@
                     <i class="bi bi-person-check-fill"></i>
                 </div>
                 <div>
-                    <div class="stat-value">{{ enrolments_total }}</div>
+                    <div class="stat-value"><a href="{{ url_for('enrolments.index') }}">{{ enrolments_total }}</a></div>
                     <div class="stat-label">Inscripciones</div>
                 </div>
             </div>
@@ -64,57 +64,28 @@
     </div>
 </div>
 
+<!-- Cursos top -->
+{% if top_courses %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0"><i class="bi bi-book-half"></i> Cursos con más inscripciones</h6>
+    </div>
+    <div class="card-body p-0">
+        <ul class="list-group list-group-flush">
+            {% for c in top_courses %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="{{ url_for('courses.detail', course_id=c.id) }}">{{ c.fullname }}</a>
+                <span class="badge bg-primary rounded-pill">{{ c.enrolled }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
 <!-- Actividad reciente -->
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-white border-bottom">
         <h6 class="mb-0"><i class="bi bi-clock-history"></i> Actividad Reciente</h6>
     </div>
-    <div class="card-body p-0">
-        {% if recent_logs %}
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Usuario</th>
-                        <th>Acción</th>
-                        <th>Detalles</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in recent_logs %}
-                    <tr>
-                        <td class="text-muted small">{{ log.created_at.strftime('%d/%m/%Y %H:%M') if log.created_at else '' }}</td>
-                        <td>{{ log.username }}</td>
-                        <td>
-                            <span class="badge 
-                                {% if log.action == 'LOGIN' %}bg-success
-                                {% elif log.action == 'LOGOUT' %}bg-secondary
-                                {% elif 'CREATE' in log.action %}bg-primary
-                                {% elif 'EDIT' in log.action %}bg-info
-                                {% elif 'DISABLE' in log.action %}bg-warning
-                                {% elif 'EMAIL' in log.action %}bg-purple
-                                {% else %}bg-dark{% endif %}">
-                                {{ log.action }}
-                            </span>
-                        </td>
-                        <td class="text-muted small">
-                            {% if log.details %}
-                                {% set details = log.details | tojson | safe %}
-                                {{ log.details }}
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-4 text-muted">
-            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
-            <p class="mt-2">No hay actividad reciente</p>
-        </div>
-        {% endif %}
-    </div>
-</div>
 {% endblock %}

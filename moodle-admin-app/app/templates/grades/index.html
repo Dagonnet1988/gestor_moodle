@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Calificaciones - Gestión Moodle{% endblock %}
+{% block page_title %}Calificaciones{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-clipboard-data"></i> Calificaciones</h4>
+    {% if selected_course and grades %}
+    <a href="{{ url_for('grades.export_course', course_id=selected_course.id) }}" class="btn btn-outline-success">
+        <i class="bi bi-download"></i> Exportar CSV
+    </a>
+    {% endif %}
+</div>
+
+<!-- Selector de curso -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form id="courseForm" method="GET" class="row g-3 align-items-end">
+            <div class="col-md-8">
+                <label class="form-label small text-muted">Curso</label>
+                <select id="courseSelect" name="course_id" class="form-select">
+                    <option value="">-- Seleccionar curso --</option>
+                    {% for course in courses %}
+                    <option value="{{ course.id }}" {% if selected_course and selected_course.id == course.id %}selected{% endif %}>
+                        {{ course.category_name }} - {{ course.fullname }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if selected_course %}
+            <div class="col-md-4 text-end">
+                <span class="text-muted small">
+                    {{ grades|selectattr('grade_pct', 'ne', none)|list|length }} estudiantes con calificación
+                </span>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{% if selected_course %}
+<!-- Tabla de calificaciones -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white">
+        <strong>{{ selected_course.fullname }}</strong>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th class="text-end">Nota Final</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in grades if g.grade_pct is not none %}
+                    <tr>
+                        <td class="text-muted">{{ g.username }}</td>
+                        <td><a href="{{ url_for('users.detail', user_id=g.user_id) }}">{{ g.firstname }} {{ g.lastname }}</a></td>
+                        <td class="text-muted">{{ g.email }}</td>
+                        <td class="text-end">
+                            {% if g.grade_pct >= 100 %}
+                                <span class="badge bg-success">{{ "%.2f"|format(g.grade_pct) }}%</span>
+                            {% elif g.grade_pct >= 60 %}
+                                <span class="badge bg-warning text-dark">{{ "%.2f"|format(g.grade_pct) }}%</span>
+                            {% else %}
+                                <span class="badge bg-danger">{{ "%.2f"|format(g.grade_pct) }}%</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                            <p class="mt-2">No hay calificaciones registradas</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% elif not selected_course %}
+<div class="text-center py-5 text-muted">
+    <i class="bi bi-clipboard-data" style="font-size: 3rem;"></i>
+    <p class="mt-2">Selecciona un curso para ver las calificaciones</p>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('courseSelect').addEventListener('change', () => {
+        document.getElementById('courseForm').submit();
+    });
+});
+</script>
+{% endblock %}

@@ -42,10 +42,26 @@ def index():
     except Exception:
         recent_logs = []
     
+    # Cursos con más inscripciones (top 5)
+    try:
+        top_courses = execute_query(f"""
+            SELECT c.id, c.fullname, COUNT(*) as enrolled
+            FROM {table('user_enrolments')} ue
+            JOIN {table('enrol')} e ON e.id = ue.enrolid
+            JOIN {table('course')} c ON c.id = e.courseid
+            WHERE ue.status = 0
+            GROUP BY c.id, c.fullname
+            ORDER BY enrolled DESC
+            LIMIT 5
+        """)
+    except Exception:
+        top_courses = []
+    
     return render_template('dashboard.html',
         users_active=users_active,
         users_suspended=users_suspended,
         courses_total=courses_total,
         enrolments_total=enrolments_total,
-        recent_logs=recent_logs
+        recent_logs=recent_logs,
+        top_courses=top_courses
     )

@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}Clonar Calificaciones - Gestión Moodle{% endblock %}
+{% block page_title %}Clonar Calificaciones{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-copy"></i> Clonar Calificaciones</h4>
+    <a href="{{ url_for('grades.index') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Volver a Calificaciones
+    </a>
+</div>
+
+<!-- Búsqueda de usuarios -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <strong><i class="bi bi-search"></i> Buscar Usuarios</strong>
+    </div>
+    <div class="card-body">
+        <form id="searchForm" method="GET" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small text-muted">Usuario Origen (copiar de)</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" name="source" class="form-control" placeholder="Número de identificación"
+                           value="{{ source_username }}" autocomplete="off">
+                </div>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label small text-muted">Usuario Destino (copiar a)</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                    <input type="text" name="dest" class="form-control" placeholder="Número de identificación"
+                           value="{{ dest_username }}" autocomplete="off">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn w-100" style="background-color: #f98012; color: white;">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if source_user or dest_user %}
+<!-- Info de usuarios -->
+<div class="row mb-4">
+    <!-- Origen -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100 {% if source_user %}border-start border-4 border-primary{% endif %}">
+            <div class="card-header bg-white">
+                <strong class="text-primary"><i class="bi bi-person"></i> Origen</strong>
+            </div>
+            <div class="card-body">
+                {% if source_user %}
+                <p class="mb-1"><strong>{{ source_user.firstname }} {{ source_user.lastname }}</strong></p>
+                <p class="mb-1 text-muted small">{{ source_user.username }} — {{ source_user.email }}</p>
+                {% if source_grades %}
+                <span class="badge bg-info">{{ source_grades|length }} curso(s)</span>
+                <span class="badge bg-success">{{ source_grades|selectattr('has_grades')|list|length }} con calificaciones</span>
+                {% else %}
+                <span class="badge bg-secondary">Sin cursos</span>
+                {% endif %}
+                {% else %}
+                <p class="text-muted mb-0">No se encontró usuario origen.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <!-- Destino -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100 {% if dest_user %}border-start border-4 border-success{% endif %}">
+            <div class="card-header bg-white">
+                <strong class="text-success"><i class="bi bi-person-fill"></i> Destino</strong>
+            </div>
+            <div class="card-body">
+                {% if dest_user %}
+                <p class="mb-1"><strong>{{ dest_user.firstname }} {{ dest_user.lastname }}</strong></p>
+                <p class="mb-1 text-muted small">{{ dest_user.username }} — {{ dest_user.email }}</p>
+                {% if dest_grades %}
+                <span class="badge bg-info">{{ dest_grades|length }} curso(s)</span>
+                <span class="badge bg-success">{{ dest_grades|selectattr('has_grades')|list|length }} con calificaciones</span>
+                {% else %}
+                <span class="badge bg-secondary">Sin cursos</span>
+                {% endif %}
+                {% else %}
+                <p class="text-muted mb-0">No se encontró usuario destino.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if source_user and dest_user and source_grades %}
+<!-- Formulario de clonación -->
+<form id="cloneForm" method="POST" action="{{ url_for('grades.clone_execute') }}">
+    <input type="hidden" name="source_user_id" value="{{ source_user.id }}">
+    <input type="hidden" name="dest_user_id" value="{{ dest_user.id }}">
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <strong><i class="bi bi-list-check"></i> Seleccionar Cursos a Clonar</strong>
+            <div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnSelectAll">
+                    <i class="bi bi-check-all"></i> Seleccionar todos
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnDeselectAll">
+                    <i class="bi bi-x-lg"></i> Deseleccionar
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:40px">
+                                <input type="checkbox" class="form-check-input" id="checkAll">
+                            </th>
+                            <th>Curso</th>
+                            <th class="text-center">Calificación Origen</th>
+                            <th class="text-center">Calificación Destino</th>
+                            <th class="text-center">Items</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sg in source_grades %}
+                        {% if sg.has_grades %}
+                        {% set dest_match = [] %}
+                        {% for dg in dest_grades if dg.course_id == sg.course_id %}
+                            {% if dest_match.append(dg) %}{% endif %}
+                        {% endfor %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input course-check"
+                                       name="course_ids" value="{{ sg.course_id }}">
+                            </td>
+                            <td>
+                                <strong>{{ sg.course_fullname }}</strong>
+                                <br><small class="text-muted">{{ sg.course_shortname }}</small>
+                            </td>
+                            <td class="text-center">
+                                {% if sg.grade_pct is not none %}
+                                    {% if sg.grade_pct >= 100 %}
+                                    <span class="badge bg-success">{{ sg.grade_pct }}%</span>
+                                    {% elif sg.grade_pct >= 60 %}
+                                    <span class="badge bg-warning text-dark">{{ sg.grade_pct }}%</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">{{ sg.grade_pct }}%</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if dest_match and dest_match[0].grade_pct is not none %}
+                                    {% set dpct = dest_match[0].grade_pct %}
+                                    {% if dpct >= 100 %}
+                                    <span class="badge bg-success">{{ dpct }}%</span>
+                                    {% elif dpct >= 60 %}
+                                    <span class="badge bg-warning text-dark">{{ dpct }}%</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">{{ dpct }}%</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary">
+                                    {{ sg.grade_items|selectattr('finalgrade', 'ne', none)|list|length }} / {{ sg.grade_items|length }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalle por curso expandible -->
+    {% for sg in source_grades %}
+    {% if sg.has_grades %}
+    <div class="card border-0 shadow-sm mb-3 detail-card" data-course="{{ sg.course_id }}" style="display:none;">
+        <div class="card-header bg-white">
+            <strong>{{ sg.course_fullname }}</strong> — Detalle de ítems
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Actividad</th>
+                        <th>Módulo</th>
+                        <th class="text-center">Nota Máxima</th>
+                        <th class="text-center">Origen</th>
+                        <th class="text-center">Destino</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set dest_match = [] %}
+                    {% for dg in dest_grades if dg.course_id == sg.course_id %}
+                        {% if dest_match.append(dg) %}{% endif %}
+                    {% endfor %}
+                    {% for item in sg.grade_items %}
+                    <tr>
+                        <td>{{ item.itemname or '(sin nombre)' }}</td>
+                        <td><span class="badge bg-light text-dark">{{ item.itemmodule or '—' }}</span></td>
+                        <td class="text-center">{{ "%.2f"|format(item.grademax) if item.grademax else '—' }}</td>
+                        <td class="text-center">
+                            {% if item.finalgrade is not none %}
+                            <strong>{{ "%.2f"|format(item.finalgrade) }}</strong>
+                            {% else %}
+                            <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if dest_match %}
+                                {% set dest_item = [] %}
+                                {% for di in dest_match[0].grade_items if di.item_id == item.item_id %}
+                                    {% if dest_item.append(di) %}{% endif %}
+                                {% endfor %}
+                                {% if dest_item and dest_item[0].finalgrade is not none %}
+                                <strong>{{ "%.2f"|format(dest_item[0].finalgrade) }}</strong>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <!-- Botón confirmar -->
+    <div class="d-flex justify-content-end gap-2 mb-5">
+        <button type="button" class="btn btn-outline-info" id="btnToggleDetails">
+            <i class="bi bi-eye"></i> Ver/Ocultar Detalles
+        </button>
+        <button type="submit" class="btn btn-danger" id="btnClone" disabled>
+            <i class="bi bi-copy"></i> Clonar Calificaciones Seleccionadas
+        </button>
+    </div>
+</form>
+
+{% elif source_user and dest_user and not source_grades %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-clipboard-x text-muted" style="font-size:3rem;"></i>
+        <p class="text-muted mt-3">El usuario origen no tiene calificaciones para clonar.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check all / uncheck all
+    const checkAll = document.getElementById('checkAll');
+    const courseChecks = document.querySelectorAll('.course-check');
+    const btnClone = document.getElementById('btnClone');
+    const btnSelectAll = document.getElementById('btnSelectAll');
+    const btnDeselectAll = document.getElementById('btnDeselectAll');
+
+    function updateCloneBtn() {
+        if (!btnClone) return;
+        const any = document.querySelectorAll('.course-check:checked').length > 0;
+        btnClone.disabled = !any;
+    }
+
+    if (checkAll) {
+        checkAll.addEventListener('change', function() {
+            courseChecks.forEach(c => c.checked = this.checked);
+            updateCloneBtn();
+        });
+    }
+    if (btnSelectAll) {
+        btnSelectAll.addEventListener('click', function() {
+            courseChecks.forEach(c => c.checked = true);
+            if (checkAll) checkAll.checked = true;
+            updateCloneBtn();
+        });
+    }
+    if (btnDeselectAll) {
+        btnDeselectAll.addEventListener('click', function() {
+            courseChecks.forEach(c => c.checked = false);
+            if (checkAll) checkAll.checked = false;
+            updateCloneBtn();
+        });
+    }
+    courseChecks.forEach(c => c.addEventListener('change', function() {
+        updateCloneBtn();
+        if (checkAll) checkAll.checked = document.querySelectorAll('.course-check:checked').length === courseChecks.length;
+    }));
+
+    // Toggle detail cards
+    const btnToggle = document.getElementById('btnToggleDetails');
+    if (btnToggle) {
+        let visible = false;
+        btnToggle.addEventListener('click', function() {
+            visible = !visible;
+            document.querySelectorAll('.detail-card').forEach(c => c.style.display = visible ? 'block' : 'none');
+        });
+    }
+
+    // Confirmación antes de clonar
+    const cloneForm = document.getElementById('cloneForm');
+    if (cloneForm) {
+        cloneForm.addEventListener('submit', function(e) {
+            const count = document.querySelectorAll('.course-check:checked').length;
+            if (!confirm('¿Estás seguro de clonar las calificaciones de ' + count + ' curso(s)?\n\nEsta acción sobrescribirá las calificaciones existentes del usuario destino.')) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

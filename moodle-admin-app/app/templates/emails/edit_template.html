@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if name else 'Nueva' }} plantilla{% endblock %}
+{% block page_title %}{{ 'Editar' if name else 'Nueva' }} plantilla de correo{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{{ url_for('emails.templates') }}" class="btn btn-link">
+        &larr; Volver a plantillas
+    </a>
+</div>
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">Nombre de plantilla</label>
+                <input type="text" class="form-control" name="name" value="{{ name }}">
+                {% if name %}
+                <div class="form-text">Puede cambiar el nombre; si existe otra plantilla con ese nombre se sobrescribirá.</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Asunto</label>
+                <input type="text" class="form-control" name="subject" value="{{ subject }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Cuerpo (HTML)</label>
+                <textarea class="form-control" name="body" rows="10">{{ body }}</textarea>
+            </div>
+            <div class="mb-2">
+                <strong>Variables disponibles</strong>: usa los siguientes marcadores para insertar datos dinámicos. El texto entre llaves se reemplaza automáticamente al enviar el correo.
+                <ul class="ms-3 mb-0">
+                    <li><code>{nombre}</code> – nombre completo del usuario</li>
+                    <li><code>{firstname}</code> – nombre de pila del usuario</li>
+                    <li><code>{lastname}</code> – apellido del usuario</li>
+                    <li><code>{email}</code> – correo del usuario</li>
+                    <li><code>{username}</code> – nombre de usuario</li>
+                    <li><code>{curso}</code> – nombre completo del curso</li>
+                    <li><code>{courseshortname}</code> – nombre corto del curso</li>
+                    <li><code>{courselink}</code> – enlace directo al curso</li>
+                    <li><code>{categoryname}</code> – nombre de la categoría del curso</li>
+                    <li><code>{url_moodle}</code> – URL de la plataforma Moodle</li>
+                </ul>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

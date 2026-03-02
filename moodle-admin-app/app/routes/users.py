@@ -3,8 +3,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from app.decorators.auth import login_required
 from app.services.moodle import (
     get_users, get_user_by_id, create_user, update_user,
-    toggle_user_suspension, reset_user_password, get_user_courses
+    toggle_user_suspension, reset_user_password, get_user_courses,
+    user_has_exhausted_attempts
 )
+from app.services.auth import get_user_highest_role
 from app.services.logger import log_action
 
 users_bp = Blueprint('users', __name__, url_prefix='/users')
@@ -17,7 +19,8 @@ def index():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 25, type=int)
     search = request.args.get('search', '').strip()
-    status = request.args.get('status', '')
+    # por defecto solo activos si no se especifica
+    status = request.args.get('status', '') or 'active'
     
     try:
         users, total = get_users(page=page, per_page=per_page, search=search or None, 
@@ -44,19 +47,21 @@ def create():
     """Crear un nuevo usuario."""
     if request.method == 'POST':
         try:
+            ident = request.form.get('username', '').strip()
+            # derivar identificador del email si no se proporciona
+            if not ident:
+                email = request.form.get('email', '').strip()
+                ident = email.split('@')[0] if '@' in email else ''
+            pwd = request.form.get('password', '').strip()
             user_id = create_user(
-                username=request.form.get('username', '').strip(),
-                password=request.form.get('password', ''),
+                username=ident,
+                password=pwd,
                 firstname=request.form.get('firstname', '').strip(),
                 lastname=request.form.get('lastname', '').strip(),
                 email=request.form.get('email', '').strip(),
-                institution=request.form.get('institution', '').strip(),
-                department=request.form.get('department', '').strip(),
-                city=request.form.get('city', '').strip(),
                 country=request.form.get('country', 'CO'),
-                phone1=request.form.get('phone1', '').strip(),
-                phone2=request.form.get('phone2', '').strip(),
-                idnumber=request.form.get('idnumber', '').strip()
+                city=request.form.get('city', '').strip(),
+                phone1=request.form.get('phone1', '').strip()
             )
             
             log_action(
@@ -97,18 +102,17 @@ def edit(user_id):
     
     if request.method == 'POST':
         try:
+            ident = request.form.get('idnumber', '').strip() or request.form.get('username', '').strip()
             update_user(
                 user_id=user_id,
                 firstname=request.form.get('firstname', '').strip(),
                 lastname=request.form.get('lastname', '').strip(),
                 email=request.form.get('email', '').strip(),
-                institution=request.form.get('institution', '').strip(),
-                department=request.form.get('department', '').strip(),
-                city=request.form.get('city', '').strip(),
                 country=request.form.get('country', 'CO'),
+                city=request.form.get('city', '').strip(),
                 phone1=request.form.get('phone1', '').strip(),
-                phone2=request.form.get('phone2', '').strip(),
-                idnumber=request.form.get('idnumber', '').strip()
+                idnumber=ident,
+                username=ident
             )
             
             log_action(
@@ -145,8 +149,21 @@ def detail(user_id):
         if not user:
             flash('Usuario no encontrado', 'warning')
             return redirect(url_for('users.index'))
+        # si no hay identificación se muestra el mismo username
+        if not user.get('idnumber'):
+            user['idnumber'] = user['username']
         
         courses = get_user_courses(user_id)
+        for c in courses:
+            c['has_exhausted_attempts'] = user_has_exhausted_attempts(c['id'], user_id)
+        # obtener rol global más alto (utilizado para login) y aplicarlo si la fila de curso no tenga
+        highest = get_user_highest_role(user_id)
+        default_role_short = highest['shortname'] if highest else None
+        default_role_name = highest['name'] if highest else None
+        for c in courses:
+            if not c.get('role_name'):
+                c['role_shortname'] = default_role_short
+                c['role_name'] = default_role_name
     except Exception as e:
         flash(f'Error al obtener datos del usuario: {e}', 'danger')
         return redirect(url_for('users.index'))

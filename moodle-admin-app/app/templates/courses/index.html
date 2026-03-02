@@ -11,25 +11,28 @@
 <!-- Filtros -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
-        <form method="GET" class="row g-3 align-items-end">
-            <div class="col-md-8">
+        <form id="filterForm" method="GET" class="row g-3 align-items-end">
+            <div class="col-md-9">
                 <label class="form-label small text-muted">Buscar curso</label>
-                <input type="text" name="search" class="form-control" 
-                       placeholder="Nombre o nombre corto del curso..."
-                       value="{{ search }}">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input id="searchInput" type="text" name="search" class="form-control" 
+                           placeholder="Nombre o nombre corto del curso..."
+                           value="{{ search }}">
+                    {% if search %}
+                    <button type="button" id="clearSearch" class="btn btn-outline-secondary" title="Limpiar búsqueda">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                    {% endif %}
+                </div>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <label class="form-label small text-muted">Por página</label>
-                <select name="per_page" class="form-select">
+                <select id="perPageSelect" name="per_page" class="form-select">
                     {% for n in [10, 25, 50, 100] %}
                     <option value="{{ n }}" {% if per_page == n %}selected{% endif %}>{{ n }}</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-outline-primary w-100">
-                    <i class="bi bi-search"></i> Buscar
-                </button>
             </div>
         </form>
     </div>
@@ -45,7 +48,6 @@
             <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>ID</th>
                         <th>Nombre del Curso</th>
                         <th>Nombre Corto</th>
                         <th>Categoría</th>
@@ -57,8 +59,7 @@
                 <tbody>
                     {% for course in courses %}
                     <tr>
-                        <td class="text-muted">{{ course.id }}</td>
-                        <td><strong>{{ course.fullname }}</strong></td>
+                        <td><a href="{{ url_for('courses.detail', course_id=course.id) }}"><strong>{{ course.fullname }}</strong></a></td>
                         <td class="text-muted">{{ course.shortname }}</td>
                         <td class="text-muted">{{ course.category_name or '-' }}</td>
                         <td>
@@ -81,7 +82,7 @@
                                    class="btn btn-outline-primary" title="Inscribir usuarios">
                                     <i class="bi bi-person-plus"></i>
                                 </a>
-                                <a href="{{ url_for('grades.by_course', course_id=course.id) }}" 
+                                <a href="{{ url_for('grades.index', course_id=course.id) }}" 
                                    class="btn btn-outline-success" title="Ver calificaciones">
                                     <i class="bi bi-clipboard-data"></i>
                                 </a>
@@ -129,4 +130,34 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form       = document.getElementById('filterForm');
+    const searchIn   = document.getElementById('searchInput');
+    const perPageSel = document.getElementById('perPageSelect');
+    const clearBtn   = document.getElementById('clearSearch');
+
+    let debounce;
+
+    searchIn.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => form.submit(), 500);
+    });
+
+    perPageSel.addEventListener('change', () => form.submit());
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            searchIn.value = '';
+            form.submit();
+        });
+    }
+
+    if (searchIn.value.length > 0) {
+        searchIn.focus();
+        searchIn.setSelectionRange(searchIn.value.length, searchIn.value.length);
+    }
+});
+</script>
 {% endblock %}

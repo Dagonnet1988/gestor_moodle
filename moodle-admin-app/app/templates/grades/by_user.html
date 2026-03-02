@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Calificaciones de {{ user.firstname }} {{ user.lastname }}{% endblock %}
+{% block page_title %}Calificaciones - {{ user.firstname }} {{ user.lastname }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center gap-2 mb-4">
+    <a href="{{ url_for('grades.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i>
+    </a>
+    <h4 class="mb-0"><i class="bi bi-clipboard-data"></i> {{ user.firstname }} {{ user.lastname }}</h4>
+</div>
+
+{% if grades %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Curso</th>
+                <th>Ítem</th>
+                <th>Nota</th>
+                <th>Modificado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for g in grades %}
+            <tr>
+                <td>{{ g.course_name }}</td>
+                <td>{{ g.itemname }}</td>
+                <td>{{ g.finalgrade if g.finalgrade is not none else 'Sin nota' }}</td>
+                <td>{{ g.timemodified|strftime('%d/%m/%Y') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No se encontraron calificaciones para este usuario.</p>
+{% endif %}
+
+{% endblock %}

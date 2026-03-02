@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Plantillas de Correo - Gestión Moodle{% endblock %}
+{% block page_title %}Plantillas de Correo{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <a href="{{ url_for('emails.new_template') }}" class="btn btn-success btn-sm">
+        <i class="bi bi-plus"></i> Nueva plantilla
+    </a>
+</div>
+<table class="table table-sm">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Asunto</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for name, tpl in templates.items() %}
+        <tr>
+            <td>{{ display_map[name] }}</td>
+            <td>{{ tpl.subject }}</td>
+            <td>
+                <a href="{{ url_for('emails.edit_template', name=name) }}" class="btn btn-primary btn-sm">Editar</a>
+                <a href="{{ url_for('emails.delete_template', name=name) }}" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar plantilla {{display_map[name]}}?');">Borrar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -29,6 +29,8 @@ class Config:
     MAIL_USE_SSL = False
     MAIL_DEFAULT_SENDER = os.getenv('SMTP_USER', '')
     MAIL_MAX_BULK = int(os.getenv('SMTP_MAX_BULK', 10))
+    # segundos de pausa entre lotes cuando se envía correo masivo
+    MAIL_BULK_PAUSE_SECONDS = int(os.getenv('SMTP_BULK_PAUSE', 5))
 
     # Moodle
-    MOODLE_URL = os.getenv('MOODLE_URL', 'http://localhost/moodle')
+    MOODLE_URL = os.getenv('MOODLE_URL', 'http://190.71.122.76/moodle/login/index.php')

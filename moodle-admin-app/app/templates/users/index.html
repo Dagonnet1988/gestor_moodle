@@ -14,33 +14,36 @@
 <!-- Filtros -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
-        <form method="GET" class="row g-3 align-items-end">
-            <div class="col-md-5">
+        <form id="filterForm" method="GET" class="row g-3 align-items-end">
+            <div class="col-md-6">
                 <label class="form-label small text-muted">Buscar</label>
-                <input type="text" name="search" class="form-control" 
-                       placeholder="Nombre, apellido, email o usuario..."
-                       value="{{ search }}">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input id="searchInput" type="text" name="search" class="form-control" 
+                           placeholder="Nombre, apellido, email o usuario..."
+                           value="{{ search }}">
+                    {% if search %}
+                    <button type="button" id="clearSearch" class="btn btn-outline-secondary" title="Limpiar búsqueda">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                    {% endif %}
+                </div>
             </div>
             <div class="col-md-3">
                 <label class="form-label small text-muted">Estado</label>
-                <select name="status" class="form-select">
+                <select id="statusSelect" name="status" class="form-select">
                     <option value="">Todos</option>
                     <option value="active" {% if status == 'active' %}selected{% endif %}>Activos</option>
                     <option value="suspended" {% if status == 'suspended' %}selected{% endif %}>Suspendidos</option>
                 </select>
             </div>
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <label class="form-label small text-muted">Por página</label>
-                <select name="per_page" class="form-select">
+                <select id="perPageSelect" name="per_page" class="form-select">
                     {% for n in [10, 25, 50, 100] %}
                     <option value="{{ n }}" {% if per_page == n %}selected{% endif %}>{{ n }}</option>
                     {% endfor %}
                 </select>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-outline-primary w-100">
-                    <i class="bi bi-search"></i> Buscar
-                </button>
             </div>
         </form>
     </div>
@@ -57,10 +60,11 @@
                 <thead class="table-light">
                     <tr>
                         <th>ID</th>
-                        <th>Usuario</th>
+                        <th>N° Identificación</th>
                         <th>Nombre</th>
+                        <th>Rol</th>
                         <th>Email</th>
-                        <th>Institución</th>
+                        <!-- institución ocultada por defecto -->
                         <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
@@ -69,15 +73,26 @@
                     {% for user in users %}
                     <tr>
                         <td class="text-muted">{{ user.id }}</td>
-                        <td><strong>{{ user.username }}</strong></td>
-                        <td>{{ user.firstname }} {{ user.lastname }}</td>
+                        <td><strong>{{ user.idnumber or user.username }}</strong></td>
+                        <td><a href="{{ url_for('users.detail', user_id=user.id) }}">{{ user.firstname }} {{ user.lastname }}</a></td>
+                        <td>
+                            {% if user.role_names %}
+                                {% for rn in user.role_names %}
+                                <span class="badge bg-primary me-1">{{ rn }}</span>
+                                {% endfor %}
+                            {% elif user.role_name %}
+                                <span class="badge bg-primary">{{ user.role_name }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td class="text-muted">{{ user.email }}</td>
-                        <td class="text-muted small">{{ user.institution or '-' }}</td>
+                        <!-- institución omitida -->
                         <td>
                             {% if user.suspended %}
                             <span class="badge bg-danger">Suspendido</span>
                             {% else %}
-                            <span class="badge bg-success">Activo</span>
+                            <span class="badge" style="background-color:#20c997">Activo</span>
                             {% endif %}
                         </td>
                         <td>
@@ -142,4 +157,40 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form        = document.getElementById('filterForm');
+    const searchInput = document.getElementById('searchInput');
+    const statusSel   = document.getElementById('statusSelect');
+    const perPageSel  = document.getElementById('perPageSelect');
+    const clearBtn    = document.getElementById('clearSearch');
+
+    let debounce;
+
+    /* --- búsqueda por texto con debounce 500 ms --- */
+    searchInput.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => form.submit(), 500);
+    });
+
+    /* --- dropdowns envían el form inmediatamente --- */
+    statusSel.addEventListener('change',  () => form.submit());
+    perPageSel.addEventListener('change', () => form.submit());
+
+    /* --- botón limpiar búsqueda --- */
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            form.submit();
+        });
+    }
+
+    /* --- mantener foco en el input tras recarga --- */
+    if (searchInput.value.length > 0) {
+        searchInput.focus();
+        searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+    }
+});
+</script>
 {% endblock %}

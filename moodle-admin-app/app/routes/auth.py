@@ -28,6 +28,7 @@ def login():
             session['firstname'] = user['firstname']
             session['lastname'] = user['lastname']
             session['email'] = user['email']
+            session['roles'] = user.get('roles', [])
             session['role'] = user['role']
             session['role_name'] = user['role_name']
             

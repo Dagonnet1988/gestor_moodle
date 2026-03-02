@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Correos - Gestión Moodle{% endblock %}
+{% block page_title %}Correos{% endblock %}
+
+{% block content %}
+<h4 class="mb-4"><i class="bi bi-envelope"></i> Correos</h4>
+<p>Desde aquí puedes enviar correos individuales o masivos a los participantes de un curso.</p>
+<a href="{{ url_for('emails.send') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-send"></i> Enviar correo
+</a>
+<a href="{{ url_for('emails.templates') }}" class="btn btn-secondary btn-sm ms-2">
+    <i class="bi bi-card-text"></i> Plantillas
+</a>
+{% endblock %}

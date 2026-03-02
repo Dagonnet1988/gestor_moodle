@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Logs de Actividad - Gestión Moodle{% endblock %}
+{% block page_title %}Logs de Actividad{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="bi bi-journal-text"></i> Registro de Actividad</h4>
+    <a href="{{ url_for('logs.export', username=filters.username or '', action=filters.action or '', target_type=filters.target_type or '', date_from=filters.date_from or '', date_to=filters.date_to or '') }}" class="btn btn-outline-success">
+        <i class="bi bi-download"></i> Exportar CSV
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form id="filterForm" method="GET" class="row g-3 align-items-end">
+            <!-- Buscar por usuario -->
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Usuario</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
+                    <input id="searchInput" type="text" name="username" class="form-control"
+                           placeholder="Nombre de usuario..."
+                           value="{{ filters.username or '' }}">
+                </div>
+            </div>
+            <!-- Acción -->
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Acción</label>
+                <select id="actionSelect" name="action" class="form-select">
+                    <option value="">Todas</option>
+                    {% for code, label in action_labels.items() %}
+                    <option value="{{ code }}" {% if filters.action == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- Tipo entidad -->
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Entidad</label>
+                <select id="targetSelect" name="target_type" class="form-select">
+                    <option value="">Todas</option>
+                    {% for code, label in target_type_labels.items() %}
+                    <option value="{{ code }}" {% if filters.target_type == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <!-- Rango de fechas -->
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Desde</label>
+                <input id="dateFrom" type="date" name="date_from" class="form-control"
+                       value="{{ filters.date_from or '' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Hasta</label>
+                <input id="dateTo" type="date" name="date_to" class="form-control"
+                       value="{{ filters.date_to or '' }}">
+            </div>
+            <!-- Limpiar -->
+            <div class="col-md-1 d-flex align-items-end">
+                {% if filters.username or filters.action or filters.target_type or filters.date_from or filters.date_to %}
+                <a href="{{ url_for('logs.index') }}" class="btn btn-outline-secondary w-100" title="Limpiar filtros">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="text-muted small">{{ total }} registros encontrados</span>
+        <div>
+            <label class="small text-muted me-1">Por página:</label>
+            <select id="perPageSelect" form="filterForm" name="per_page" class="form-select form-select-sm d-inline-block" style="width: auto;">
+                {% for n in [10, 25, 50, 100] %}
+                <option value="{{ n }}" {% if per_page == n %}selected{% endif %}>{{ n }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 140px;">Fecha</th>
+                        <th style="width: 120px;">Usuario</th>
+                        <th style="width: 160px;">Acción</th>
+                        <th style="width: 100px;">Entidad</th>
+                        <th>Detalles</th>
+                        <th style="width: 110px;">IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td class="text-muted small">
+                            {{ log.created_at.strftime('%d/%m/%Y %H:%M') if log.created_at else '' }}
+                        </td>
+                        <td><strong>{{ log.username }}</strong></td>
+                        <td>
+                            {% set action = log.action %}
+                            {% if action in ('LOGIN', 'LOGOUT') %}
+                                <span class="badge bg-info text-dark">{{ log.action_label }}</span>
+                            {% elif action in ('CREATE_USER', 'ENROL_USER', 'BULK_ENROL') %}
+                                <span class="badge bg-success">{{ log.action_label }}</span>
+                            {% elif action in ('DISABLE_USER', 'UNENROL_USER') %}
+                                <span class="badge bg-danger">{{ log.action_label }}</span>
+                            {% elif action in ('EDIT_USER', 'ENABLE_USER', 'RESET_PASSWORD', 'ALLOW_RETRY') %}
+                                <span class="badge bg-warning text-dark">{{ log.action_label }}</span>
+                            {% elif action in ('SEND_EMAIL', 'BULK_EMAIL', 'RESEND_EMAIL', 'WELCOME_EMAIL') %}
+                                <span class="badge bg-primary">{{ log.action_label }}</span>
+                            {% elif action in ('EXPORT_GRADES', 'EXPORT_DATA') %}
+                                <span class="badge bg-secondary">{{ log.action_label }}</span>
+                            {% else %}
+                                <span class="badge bg-dark">{{ log.action_label }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">
+                            {% if log.target_type_label %}
+                                {{ log.target_type_label }}
+                                {% if log.target_id %}
+                                <span class="text-muted">#{{ log.target_id }}</span>
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if log.details_parsed %}
+                                {% for key, val in log.details_parsed.items() %}
+                                    <span class="text-muted">{{ key }}:</span> {{ val }}{% if not loop.last %} &middot; {% endif %}
+                                {% endfor %}
+                            {% elif log.details %}
+                                {{ log.details }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-muted small">{{ log.ip_address or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                            <p class="mt-2">No se encontraron registros</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="card-footer bg-white">
+        <nav>
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page-1 }}&username={{ filters.username or '' }}&action={{ filters.action or '' }}&target_type={{ filters.target_type or '' }}&date_from={{ filters.date_from or '' }}&date_to={{ filters.date_to or '' }}&per_page={{ per_page }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == page or (p >= page - 2 and p <= page + 2) or p == 1 or p == total_pages %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="?page={{ p }}&username={{ filters.username or '' }}&action={{ filters.action or '' }}&target_type={{ filters.target_type or '' }}&date_from={{ filters.date_from or '' }}&date_to={{ filters.date_to or '' }}&per_page={{ per_page }}">{{ p }}</a>
+                    </li>
+                    {% elif p == page - 3 or p == page + 3 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page+1 }}&username={{ filters.username or '' }}&action={{ filters.action or '' }}&target_type={{ filters.target_type or '' }}&date_from={{ filters.date_from or '' }}&date_to={{ filters.date_to or '' }}&per_page={{ per_page }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form       = document.getElementById('filterForm');
+    const searchIn   = document.getElementById('searchInput');
+    const actionSel  = document.getElementById('actionSelect');
+    const targetSel  = document.getElementById('targetSelect');
+    const dateFrom   = document.getElementById('dateFrom');
+    const dateTo     = document.getElementById('dateTo');
+    const perPageSel = document.getElementById('perPageSelect');
+
+    let debounce;
+
+    /* búsqueda por usuario con debounce */
+    searchIn.addEventListener('input', () => {
+        clearTimeout(debounce);
+        debounce = setTimeout(() => form.submit(), 500);
+    });
+
+    /* selects envían el form inmediatamente */
+    actionSel.addEventListener('change',  () => form.submit());
+    targetSel.addEventListener('change',  () => form.submit());
+    perPageSel.addEventListener('change', () => form.submit());
+
+    /* fechas envían al seleccionar */
+    dateFrom.addEventListener('change', () => form.submit());
+    dateTo.addEventListener('change',   () => form.submit());
+
+    /* mantener foco en input tras recarga */
+    if (searchIn.value.length > 0) {
+        searchIn.focus();
+        searchIn.setSelectionRange(searchIn.value.length, searchIn.value.length);
+    }
+});
+</script>
+{% endblock %}

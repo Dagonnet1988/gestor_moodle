@@ -13,40 +13,192 @@
 
 <div class="card border-0 shadow-sm">
     <div class="card-body">
-        <form method="POST" action="{{ url_for('enrolments.enrol') }}">
+        {# form para elegir curso (GET) #}
+        <form method="GET" id="course_form" class="mb-4">
             <div class="row g-3">
                 <div class="col-md-6">
                     <label for="course_id" class="form-label">Curso <span class="text-danger">*</span></label>
-                    <select class="form-select" id="course_id" name="course_id" required>
+                    <select class="form-select" id="course_id" name="course_id" required
+                            onchange="document.getElementById('course_form').submit();">
                         <option value="">Seleccionar curso...</option>
                         {% for course in courses %}
                         <option value="{{ course.id }}" {% if course.id == selected_course_id %}selected{% endif %}>
-                            {{ course.fullname }} ({{ course.shortname }})
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label for="user_id" class="form-label">Usuario <span class="text-danger">*</span></label>
-                    <select class="form-select" id="user_id" name="user_id" required>
-                        <option value="">Seleccionar usuario...</option>
-                        {% for user in users %}
-                        <option value="{{ user.id }}">
-                            {{ user.firstname }} {{ user.lastname }} ({{ user.username }})
+                            {{ course.category_name }} - {{ course.fullname }}
                         </option>
                         {% endfor %}
                     </select>
                 </div>
             </div>
+        </form>
+
+        {% if selected_course_id %}
+        <form method="POST" id="enrol_form" action="{{ url_for('enrolments.enrol') }}">
+            <input type="hidden" name="course_id" value="{{ selected_course_id }}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="user_id" class="form-label">Usuarios disponibles</label>
+                    <div class="mb-2" style="display:none;" id="search_group">
+                        <input type="text" id="user_search" class="form-control" placeholder="Buscar nombre o documento...">
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <select class="form-select flex-grow-1" id="user_id" name="user_id">
+                        <option value="">Seleccionar usuario...</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}" data-idnumber="{{ user.idnumber }}">
+                            {{ user.firstname }} {{ user.lastname }} ({{ user.username }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                        <button type="button" class="btn btn-outline-secondary ms-2" id="collapse_list" title="Cerrar lista">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">Usuarios activos no inscritos en el curso</div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <label class="form-label">Lista para inscribir</label>
+                <div id="selected-users" class="row mb-2 g-2"></div>
+                <input type="hidden" name="selected_user_ids" id="selected_user_ids" value="">
+            </div>
             <div class="mt-4 d-flex gap-2">
                 <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg"></i> Inscribir
+                    <i class="bi bi-check-lg"></i> Inscribir seleccionados
                 </button>
                 <a href="{{ url_for('courses.index') }}" class="btn btn-outline-secondary">
                     Cancelar
                 </a>
             </div>
         </form>
+        {% endif %}
     </div>
 </div>
+
+{% if selected_course_id %}
+<script>
+    // manage array of selected users
+    const selected = [];
+    const maxUsers = 50;  // límite prudente
+    const selectEl = document.getElementById('user_id');
+    const collapseBtn = document.getElementById('collapse_list');
+    const searchGroup = document.getElementById('search_group');
+    const searchEl = document.getElementById('user_search');
+    const listEl = document.getElementById('selected-users');
+    const hiddenEl = document.getElementById('selected_user_ids');
+    // keep a map of all original options so we can re-create them when needed
+    const userOptions = {};
+    if (selectEl) {
+        for (let opt of selectEl.options) {
+            if (opt.value) {
+                userOptions[opt.value] = opt.text;
+            }
+        }
+    }
+
+    function updateList() {
+        listEl.innerHTML = '';
+        selected.forEach((entry, idx) => {
+            const col = document.createElement('div');
+            col.className = 'col-12 col-md-6 col-lg-4';
+            const item = document.createElement('div');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center mb-2 bg-light';
+            item.style.borderRadius = '4px';
+            item.textContent = entry.text;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-sm btn-outline-danger';
+            btn.innerHTML = '<i class="bi bi-x"></i>';
+            btn.onclick = () => {
+                // restore the option to dropdown so it can be selected again
+                const removed = selected[idx];
+                if (removed && selectEl) {
+                    const opt = document.createElement('option');
+                    opt.value = removed.id;
+                    opt.text = removed.text;
+                    selectEl.appendChild(opt);
+                }
+                selected.splice(idx,1);
+                updateList();
+            };
+            item.appendChild(btn);
+            col.appendChild(item);
+            listEl.appendChild(col);
+        });
+        hiddenEl.value = selected.map(e=>e.id).join(',');
+    }
+
+    if (selectEl) {
+        // filter options based on search field
+        const searchEl = document.getElementById('user_search');
+        if (searchEl) {
+            // show search box when dropdown is focused
+            selectEl.addEventListener('focus', () => {
+                if(searchGroup) searchGroup.style.display = 'block';
+                // expand the select so options are visible even if it loses focus
+                selectEl.size = Math.min(10, selectEl.options.length);
+            });
+            // hide search when the search field loses focus and is empty
+            const hideIfEmpty = () => {
+                if (document.activeElement !== searchEl && !searchEl.value) {
+                    searchEl.style.display = 'none';
+                    selectEl.size = 1;
+                }
+            };
+            searchEl.addEventListener('focus', () => {
+                // keep select expanded while typing
+                selectEl.size = Math.min(10, selectEl.options.length);
+            });
+            if(collapseBtn){
+                collapseBtn.addEventListener('click', ()=>{ selectEl.size=1; });
+            }
+            searchEl.addEventListener('blur', hideIfEmpty);
+            searchEl.addEventListener('input', () => {
+                const q = searchEl.value.toLowerCase();
+                for (let opt of selectEl.options) {
+                    if (opt.value === '') continue;
+                    const text = opt.text.toLowerCase();
+                    const idn = (opt.dataset.idnumber||'').toLowerCase();
+                    opt.hidden = !(text.includes(q) || idn.includes(q));
+                }
+            });
+        }
+        // helper: add the currently highlighted option to the selected list
+        function addSelected() {
+            const id = selectEl.value;
+            if (!id) return;
+            const text = selectEl.options[selectEl.selectedIndex].text;
+            if (selected.find(e=>e.id===id)) {
+                selectEl.value = '';
+                return;
+            }
+            if (selected.length >= maxUsers) {
+                alert('Ha alcanzado el límite de usuarios seleccionados');
+                selectEl.value = '';
+                return;
+            }
+            selected.push({id, text});
+            updateList();
+            selectEl.options[selectEl.selectedIndex].remove();
+            selectEl.value = '';
+        }
+
+        // select on click (mouse)
+        selectEl.addEventListener('click', (e) => {
+            if (selectEl.value) addSelected();
+        });
+        // select on Enter key
+        selectEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addSelected();
+            }
+        });
+        // prevent native type-ahead from firing change
+        selectEl.addEventListener('change', (e) => {
+            // do nothing — selection is handled by click/Enter only
+        });
+    }
+    
+</script>
+{% endif %}
 {% endblock %}

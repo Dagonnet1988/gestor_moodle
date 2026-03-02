@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Enviar Correo - Gestión Moodle{% endblock %}
+{% block page_title %}Enviar Correo{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <!-- GET form for selecting course, ensures course_id appears in URL even if scripts fail -->
+        <form method="GET" id="course_form" class="mb-3">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Curso</label>
+                    <div class="input-group">
+                        <select name="course_id" class="form-select" id="course_select" required
+                                onchange="document.getElementById('course_form').submit();">
+                        <option value="">-- seleccionar --</option>
+                        {% for c in courses %}
+                        <option value="{{ c.id }}" {% if c.id == selected_course_id %}selected{% endif %}>
+                            {% if c.category_name %}{{ c.category_name }} - {% endif %}{{ c.fullname }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- POST form for sending emails; course_id is echoed from query param -->
+        <form method="POST" action="{{ url_for('emails.send') }}">
+            <input type="hidden" name="course_id" value="{{ selected_course_id or '' }}">
+            <div class="row g-3 align-items-start">
+                <div class="col-md-4">
+                    <label class="form-label">Plantilla</label>
+                    <select name="template" class="form-select">
+                        {% for name, tpl in templates.items() %}
+                        <option value="{{ name }}" {% if selected_template==name %}selected{% endif %}>
+                            {{ template_display[name] or name|capitalize }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">
+                        <a href="{{ url_for('emails.templates') }}">Gestionar plantillas</a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Destinatarios</label>
+                    <span class="badge bg-secondary ms-2" id="recip-count">{{ participants|length }} disponibles</span>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" value="on" id="all_checkbox" name="send_type"
+                            {% if request.args.get('send_type')=='bulk_course' %}checked{% endif %}>
+                        <label class="form-check-label" for="all_checkbox">
+                            Enviar a todos los participantes
+                        </label>
+                    </div>
+                    <div class="mb-2" id="search_group" style="display:none;">
+                        <input type="text" id="user_search" class="form-control" placeholder="Buscar participante...">
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <select class="form-select flex-grow-1" id="user_select">
+                            <option value="">Seleccionar participante...</option>
+                            {% for p in participants %}
+                            <option value="{{ p.id }}">
+                                {{ p.firstname }} {{ p.lastname }} ({{ p.username }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" class="btn btn-outline-secondary ms-2" id="collapse_list" title="Cerrar lista">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div class="form-text">Usuarios activos del curso</div>
+                    <div class="mt-3" id="selection_group">
+                        <label class="form-label">Seleccionados</label>
+                        <div id="selected-users" class="row mb-2 g-2"></div>
+                        <input type="hidden" name="selected_user_ids" id="selected_user_ids" value="">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Enviar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// toggle recipients select list when "send to all" checkbox changes
+const allCheck = document.getElementById('all_checkbox');
+const userSelect = document.getElementById('user_select');
+const searchGroupEl = document.getElementById('search_group');
+const selectionGroup = document.getElementById('selection_group');
+if (allCheck && userSelect) {
+    function toggleBulk() {
+        const checked = allCheck.checked;
+        userSelect.disabled = checked;
+        if (searchGroupEl) searchGroupEl.style.display = checked ? 'none' : 'block';
+        if (selectionGroup) selectionGroup.style.display = checked ? 'none' : 'block';
+        const dropdownGroup = userSelect.closest('.d-flex');
+        if (dropdownGroup) dropdownGroup.style.display = checked ? 'none' : 'flex';
+    }
+    allCheck.addEventListener('change', toggleBulk);
+    toggleBulk();
+}
+
+// reload page when template changes so filtering applies
+const templateSelect = document.querySelector('select[name="template"]');
+if (templateSelect) {
+    templateSelect.addEventListener('change', function() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('template', this.value);
+        window.location = url.toString();
+    });
+}
+
+// --- dynamic selection list (same pattern as enrolments) ---
+const selected = [];
+const maxUsers = 500;
+const selectEl = document.getElementById('user_select');
+const collapseBtn = document.getElementById('collapse_list');
+const searchGroup = document.getElementById('search_group');
+const searchEl = document.getElementById('user_search');
+const listEl = document.getElementById('selected-users');
+const hiddenEl = document.getElementById('selected_user_ids');
+const recipCount = document.getElementById('recip-count');
+
+function updateList() {
+    listEl.innerHTML = '';
+    selected.forEach((entry, idx) => {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-md-6 col-lg-4';
+        const item = document.createElement('div');
+        item.className = 'list-group-item d-flex justify-content-between align-items-center mb-2 bg-light';
+        item.style.borderRadius = '4px';
+        item.textContent = entry.text;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm btn-outline-danger';
+        btn.innerHTML = '<i class="bi bi-x"></i>';
+        btn.onclick = () => {
+            const removed = selected[idx];
+            if (removed && selectEl) {
+                const opt = document.createElement('option');
+                opt.value = removed.id;
+                opt.text = removed.text;
+                // insert back in sorted order
+                let inserted = false;
+                for (let i = 0; i < selectEl.options.length; i++) {
+                    const existing = selectEl.options[i];
+                    if (existing.value === '') continue;
+                    if (removed.text.localeCompare(existing.text, undefined, {sensitivity:'base'}) < 0) {
+                        selectEl.insertBefore(opt, existing);
+                        inserted = true;
+                        break;
+                    }
+                }
+                if (!inserted) selectEl.appendChild(opt);
+            }
+            selected.splice(idx, 1);
+            updateList();
+            updateCount();
+        };
+        item.appendChild(btn);
+        col.appendChild(item);
+        listEl.appendChild(col);
+    });
+    hiddenEl.value = selected.map(e => e.id).join(',');
+}
+
+function updateCount() {
+    if (recipCount) {
+        const tot = selectEl ? selectEl.options.length - 1 : 0;
+        recipCount.textContent = tot + ' disponibles';
+    }
+}
+
+if (selectEl) {
+    // show search box when dropdown gets focus and expand the list
+    selectEl.addEventListener('focus', () => {
+        if (searchGroup) searchGroup.style.display = 'block';
+        selectEl.size = Math.min(10, selectEl.options.length);
+    });
+
+    if (searchEl) {
+        searchEl.addEventListener('focus', () => {
+            selectEl.size = Math.min(10, selectEl.options.length);
+        });
+        searchEl.addEventListener('input', () => {
+            const q = searchEl.value.toLowerCase();
+            for (let opt of selectEl.options) {
+                if (opt.value === '') continue;
+                opt.hidden = !opt.text.toLowerCase().includes(q);
+            }
+        });
+    }
+
+    if (collapseBtn) {
+        collapseBtn.addEventListener('click', () => { selectEl.size = 1; });
+    }
+
+    // helper: add the currently highlighted option to the selected list
+    function addSelected() {
+        const id = selectEl.value;
+        if (!id) return;
+        const text = selectEl.options[selectEl.selectedIndex].text;
+        if (selected.find(e => e.id === id)) {
+            selectEl.value = '';
+            return;
+        }
+        if (selected.length >= maxUsers) {
+            alert('Ha alcanzado el límite de usuarios seleccionados');
+            selectEl.value = '';
+            return;
+        }
+        selected.push({id, text});
+        updateList();
+        selectEl.options[selectEl.selectedIndex].remove();
+        selectEl.value = '';
+        updateCount();
+    }
+
+    // select on click (mouse)
+    selectEl.addEventListener('click', (e) => {
+        if (selectEl.value) addSelected();
+    });
+    // select on Enter key
+    selectEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addSelected();
+        }
+    });
+    // prevent native type-ahead from firing change
+    selectEl.addEventListener('change', (e) => {
+        // do nothing — selection is handled by click/Enter only
+    });
+
+    updateCount();
+}
+</script>
+{% endblock %}
