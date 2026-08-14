@@ -151,8 +151,8 @@ def create_user(username, password, firstname, lastname, email,
         INSERT INTO {table('user')} 
             (auth, confirmed, mnethostid, username, password, firstname, lastname, 
              email, city, country, phone1, idnumber, timecreated, timemodified, lang)
-        VALUES 
-            ('manual', 1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'es')
+        VALUES
+            ('manual', 1, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'es')
     """
     # sanity check: number of placeholders should match len(params)
     ph = query.count('%s')
